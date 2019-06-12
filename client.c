@@ -27,28 +27,83 @@ int main(int argc, char *argv[]) {
 	        ntohs(adrServ->sin_port));
 
   printf("%s: connecting the socket\n", CMD);
+  
+  // faire un fork 
+  
+  pid_t pid_pere;
+  
+  pid_pere = fork ();
+  
+  
+  // connection
+  
   ret = connect(sock, (struct sockaddr *)adrServ, sizeof(struct sockaddr_in));
   if (ret < 0)
     erreur_IO("connect");
+    
+// fin param
 
-  while (!fin) {
-    printf("ligne> ");
-    if (fgets(ligne, LIGNE_MAX, stdin) == NULL)
-      erreur("saisie fin de fichier\n");
-
-    lgEcr = ecrireLigne(sock, ligne);
-    if (lgEcr == -1)
-      erreur_IO("ecrire ligne");
+// si processus père i.e.  écriture
   
-    printf("Done.\n");
-    printf("%s: %d bytes sent\n", CMD, lgEcr);
+  if (getpid()==pid_pere){
 
-    if (strcmp(ligne, "fin\n") == 0)
-      fin = VRAI;
+	  while (!fin) {
+		printf("ligne> ");
+		if (fgets(ligne, LIGNE_MAX, stdin) == NULL)
+		  erreur("saisie fin de fichier\n");
+
+		lgEcr = ecrireLigne(sock, ligne);
+		if (lgEcr == -1)
+		  erreur_IO("ecrire ligne");
+	  
+		printf("Done.\n");
+		printf("%s: %d bytes sent\n", CMD, lgEcr);
+
+		if (strcmp(ligne, "fin\n") == 0)
+		  fin = VRAI;
+	  }
+
+	  if (close(sock) == -1)
+		erreur_IO("close socket");
+
+	  exit(EXIT_SUCCESS);
   }
+  
+// si processus fils  i.e. lecture
+	
+	else {
+		while (!fin) {
+			if (lireLigne(sock, ligne) > 0){
+			
+				printf("%s \n", ligne);
+			}
+		  }
 
-  if (close(sock) == -1)
-    erreur_IO("close socket");
+		  if (close(sock) == -1)
+			erreur_IO("close socket");
 
-  exit(EXIT_SUCCESS);
+		  exit(EXIT_SUCCESS);
+	
+	
+	
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+  
+  
 }
+
+
+
+
+
+
+
+
+
