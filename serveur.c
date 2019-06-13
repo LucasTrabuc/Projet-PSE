@@ -1,4 +1,5 @@
 #include "pse.h"
+#include "fonctions.h"
 
 #define    CMD      "serveur"
 #define NB_WORKERS  3	//choix du nombre de joueurs
@@ -55,7 +56,7 @@ int main(int argc, char *argv[]) {
   if (ret < 0)
     erreur_IO("listen");
   
-  while (VRAI) {
+  for(int i = 0; i<=2; i++) {
     printf("%s: accepting a connection\n", CMD);
     canal_lec = accept(ecoute, (struct sockaddr *)&adrClient, &lgAdrClient);
     if (canal_lec < 0)
@@ -72,11 +73,18 @@ int main(int argc, char *argv[]) {
     printf("worker %d libre\n", numWorker);
     dataThreadLec[numWorker].spec.canal = canal_lec;
     dataThreadEcr[numWorker].spec.canal = canal_ecr;
+<<<<<<< Updated upstream
     printf("test1\n");
+=======
+    dataThreadLec[numWorker].spec.tid = i;
+    dataThreadEcr[numWorker].spec.tid = i;
+>>>>>>> Stashed changes
     sem_post(&dataThreadLec[numWorker].spec.sem);//réveille le worker
 
     printf("test2\n");
   }
+  
+  Init_jeu(); // INITIALISE LE JEU
 
   if (close(ecoute) == -1)
     erreur_IO("fermeture ecoute");

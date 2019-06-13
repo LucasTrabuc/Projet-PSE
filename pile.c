@@ -5,10 +5,10 @@
 
 
 
-Pile Initialiser() 
+Pile* Initialiser() 
 {
-	Pile pilevide;
-	pilevide.tete = NULL; 
+	Pile* pilevide= malloc(sizeof(Pile));
+	pilevide->tete = NULL; 
 	return pilevide;
 }
 
@@ -17,13 +17,8 @@ int est_vide(Pile* P)
 	return (P->tete == NULL);
 }
 
-void empiler(Pile *P, int figure, int enseigne) 
+void empiler(Pile *P, Carte* carte) 
 {
-	Carte* carte = (Carte*) malloc(sizeof(Carte)); 
-	
-	carte->figure = figure;
-	carte->enseigne = enseigne;
-	carte->id = 4*figure + enseigne;
 	//printf("Figure = %s enseigne = %s id = %d\n", Figure[carte->figure], Enseigne[carte->enseigne], carte->id);
 
 	carte->suivant = P->tete; 
@@ -31,14 +26,18 @@ void empiler(Pile *P, int figure, int enseigne)
 	
 }
 
-int depiler(Pile *P) //retourne l'id de la carte piochee
+Carte* depiler(Pile *P)
 {	
-	int id = P->tete->id;
-
-	Carte* temp = P->tete;
+	
+	Carte* temp;// = malloc(sizeof(Carte));
+	
+	temp = P->tete;
+	
+	//printf("%d \n",temp->id);
+	
 	P->tete = P->tete->suivant;
-	free(temp);
-	return id;
+	printf("salut\n");
+	return temp;
 }
 
 void detruire (Pile *P)
@@ -65,9 +64,9 @@ void pioche_n_push(Pile *P, int debut, int fin){ //pioche une carte au hasard da
 	courant = P->tete;
 	Carte* temp;
 	
-	if(pioche == 0){
-		temp = courant;
-		P->tete = courant ->suivant;
+	if((pioche == 0)||( pioche == 40)){
+		temp = P->tete;
+		P->tete = P->tete->suivant;
 		temp->suivant = NULL;
 		//printf("id = %d, taille pile = %d\n", courant->id, fin-debut);
 	}
@@ -87,7 +86,7 @@ void pioche_n_push(Pile *P, int debut, int fin){ //pioche une carte au hasard da
 	courant = P->tete;
 	int push = rand()%(fin-debut);
 	//printf("Push %deme position\n\n",push);
-	if(push==0){
+	if(push==0 || pioche == 40){
 		temp->suivant = P->tete;
 		P->tete = temp;
 	}
@@ -99,9 +98,7 @@ void pioche_n_push(Pile *P, int debut, int fin){ //pioche une carte au hasard da
 		courant->suivant = temp;
 	}		
 	
-	
-	//printf("Carte piochee %d\n", temp->id);
-	//free(courant);
+	//free
 }
 	
 	

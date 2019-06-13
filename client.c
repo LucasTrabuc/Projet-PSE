@@ -1,4 +1,5 @@
 #include "pse.h"
+#include "fonctions.h"
 
 #define CMD   "client"
 

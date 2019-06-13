@@ -38,9 +38,7 @@ void pioche_n_push(Pile *P, int debut, int fin); //pioche une carte au hasard da
 void initialisation(Pile *pile_jouee, Pile *pile_non_jouee); //cree la pile
 void melange(Pile* pile, int nb_melange, int debut, int fin); //melange la pile
 void distribution(Pile* pile, Joueur** joueurs); //distribue les cartes aux joueurs
-
-
-
-
+void Init_jeu(void); //initialise le jeu
+void Transfert_carte(Joueur** joueurs, int donneur, int receveur, int choix_carte);
 
 
