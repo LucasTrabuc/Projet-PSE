@@ -12,8 +12,8 @@ int main(int argc, char *argv[]) {
   if (argc != 3)
     erreur("usage: %s machine port\n", argv[0]);
 	
-	pid_t pid_pere;
-  pid_pere = fork ();
+	pid_t pid_fils;
+  pid_fils = fork ();
 	
   printf("%s: creating a socket\n", CMD);
   sock = socket (AF_INET, SOCK_STREAM, 0);
@@ -30,11 +30,7 @@ int main(int argc, char *argv[]) {
 	        ntohs(adrServ->sin_port));
 
   printf("%s: connecting the socket\n", CMD);
-  
-  // faire un fork 
-  
-  
-  
+
   
   // connection
   ret = connect(sock, (struct sockaddr *)adrServ, sizeof(struct sockaddr_in));
@@ -47,8 +43,7 @@ int main(int argc, char *argv[]) {
 
 // si processus père i.e.  écriture
   
-  if (getpid()==pid_pere){
-
+  if (pid_fils!=0){
 	  while (!fin) {
 		printf("ligne> ");
 		if (fgets(ligne, LIGNE_MAX, stdin) == NULL)
