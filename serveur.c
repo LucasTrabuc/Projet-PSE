@@ -58,13 +58,12 @@ int main(int argc, char *argv[]) {
     canal_lec = accept(ecoute, (struct sockaddr *)&adrClient, &lgAdrClient);
     if (canal_lec < 0)
       erreur_IO("accept");
+    printf("%s: adr %s, port %hu\n", CMD, stringIP(ntohl(adrClient.sin_addr.s_addr)), ntohs(adrClient.sin_port));
+    
     canal_ecr = accept(ecoute, (struct sockaddr *)&adrClient, &lgAdrClient);
     if (canal_ecr < 0)
       erreur_IO("accept");
-
-    printf("%s: adr %s, port %hu\n", CMD,
-	        stringIP(ntohl(adrClient.sin_addr.s_addr)),
-	        ntohs(adrClient.sin_port));
+	  printf("%s: adr %s, port %hu\n", CMD, stringIP(ntohl(adrClient.sin_addr.s_addr)), ntohs(adrClient.sin_port));
 
     sem_wait(&sem_mutex);//attend si aucun worker libre
     numWorker = chercherWorkerLibre();

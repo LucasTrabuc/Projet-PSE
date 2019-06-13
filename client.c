@@ -11,7 +11,10 @@ int main(int argc, char *argv[]) {
 
   if (argc != 3)
     erreur("usage: %s machine port\n", argv[0]);
-
+	
+	pid_t pid_pere;
+  pid_pere = fork ();
+	
   printf("%s: creating a socket\n", CMD);
   sock = socket (AF_INET, SOCK_STREAM, 0);
   if (sock < 0)
@@ -30,16 +33,15 @@ int main(int argc, char *argv[]) {
   
   // faire un fork 
   
-  pid_t pid_pere;
   
-  pid_pere = fork ();
   
   
   // connection
-  
   ret = connect(sock, (struct sockaddr *)adrServ, sizeof(struct sockaddr_in));
   if (ret < 0)
     erreur_IO("connect");
+	else
+		printf("réussi\n");
     
 // fin param
 
