@@ -1,17 +1,22 @@
 //On suppose que l'on joue avec les règles pour 3 personnes
-//pour compiler make main 
-//pour executer ./main
 
-#include "header.h"
+
+#include "fonctions.h"
 #include "stdio.h"
 #include "time.h"
 #include "stdlib.h"
 #include "math.h"
 #include "string.h"
+#include "pse.h"
+
+#define NB_WORKERS  3
+
+Joueur* joueurs[NB_WORKERS];
 
 
-const char* Figure[] = {"As", "Deux", "Trois", "Quatre", "Cinq", "Six", "Sept", "Huit", "Neuf", "Dix", "Valet", "Dame", "Roi"};
-const char* Enseigne[] = {"Carreaux", "Coeur", "Pique", "Trefle"};
+const char Figure[] = {'A', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'J', 'Q', 'K'};
+const char Enseigne[] = {'K', 'C', 'P', 'T'};
+extern DataThread* dataThreadEcr;
 	
 void Init_jeu(void){	
 	srand(time(NULL));
@@ -33,13 +38,16 @@ void Init_jeu(void){
 	parcours = pile_jouee->tete;
 	printf("Pile jouee melangee\n");
 	while(parcours!=NULL){
-		printf("%s de %s id = %d\n", Figure[parcours->figure], Enseigne[parcours->enseigne], parcours->id);
+		printf("%c de %c id = %d\n", Figure[parcours->figure], Enseigne[parcours->enseigne], parcours->id);
 		parcours = parcours -> suivant;
 	}
 	
 	//CREATION JOUEURS
-	
-	Joueur* joueurs[3];	
+	for(int i=0; i<=2; i++){
+		Joueur *point_joueur = malloc(sizeof(Joueur));
+		joueurs[i] = point_joueur;
+		joueurs[i]->points = 0;
+	}	
 	
 	
 	//DISTRIBUTION
@@ -76,29 +84,26 @@ void initialisation(Pile *pile_jouee, Pile *pile_non_jouee){ //création des deu
 	}
 }
 
+
 void melange(Pile* pile, int nb_melange, int debut, int fin){
-	for(int i=0; i<nb_melange; i++){ //pour le jeu_non_joue
-		pioche_n_push(pile, debut, fin);
-		
+	for(int i=0; i<nb_melange; i++){ 
+		pioche_n_push(pile, debut, fin);		
 	}
 	Carte* parcours = (Carte*) malloc(sizeof(Carte));
 	parcours = pile->tete;
 }
 
+
+
 void distribution(Pile* pile, Joueur** joueurs){
 	
 	Carte* carte_donnee = malloc(sizeof(Carte));			
 	for(int n_joueur = 0; n_joueur <= 2; n_joueur++){
-		Joueur* joueur = malloc(sizeof(Joueur));
-		Pile* Main = malloc(sizeof(Pile));
-		Main = Initialiser();
-		joueur->main = Main;
+		joueurs[n_joueur]->main = Initialiser();
 		for(int i=0; i<=3; i++){
 			carte_donnee = depiler(pile);
-			empiler(joueur->main, carte_donnee);
-		}
-		joueurs[n_joueur] = joueur;
-		
+			empiler(joueurs[n_joueur]->main, carte_donnee);
+		}		
 	}
 	
 } 
@@ -117,8 +122,6 @@ int est_vide(Pile* P)
 
 void empiler(Pile *P, Carte* carte) 
 {
-	//printf("Figure = %s enseigne = %s id = %d\n", Figure[carte->figure], Enseigne[carte->enseigne], carte->id);
-
 	carte->suivant = P->tete; 
 	P->tete = carte;
 	
@@ -127,14 +130,9 @@ void empiler(Pile *P, Carte* carte)
 Carte* depiler(Pile *P)
 {	
 	
-	Carte* temp;// = malloc(sizeof(Carte));
-	
+	Carte* temp;
 	temp = P->tete;
-	
-	//printf("%d \n",temp->id);
-	
 	P->tete = P->tete->suivant;
-	printf("salut\n");
 	return temp;
 }
 
@@ -154,8 +152,7 @@ void pioche_n_push(Pile *P, int debut, int fin){ //pioche une carte au hasard da
 
 	
 	//PIOCHE 
-	int pioche = rand()%(fin-debut);
-	//printf("\nPioche %deme carte\n\n", pioche);	
+	int pioche = rand()%(fin-debut);	
 	
 	//parcours de la pile
 	Carte* courant = (Carte*) malloc(sizeof(Carte)); 
@@ -166,15 +163,13 @@ void pioche_n_push(Pile *P, int debut, int fin){ //pioche une carte au hasard da
 		temp = P->tete;
 		P->tete = P->tete->suivant;
 		temp->suivant = NULL;
-		//printf("id = %d, taille pile = %d\n", courant->id, fin-debut);
 	}
 	else{ 
 		for(int i = 1; i<pioche; i++){
-			//printf("id = %d, i=%d taille pile = %d\n", courant->id, i, fin-debut);
 			courant = courant->suivant;
 		}
 		temp = courant->suivant;
-		//printf("Carte choisiee %d\n", temp->id);
+
 		//On extrait
 		courant->suivant = temp->suivant;
 		temp->suivant = NULL;
@@ -183,7 +178,7 @@ void pioche_n_push(Pile *P, int debut, int fin){ //pioche une carte au hasard da
 	//PUSH (replace la carte)
 	courant = P->tete;
 	int push = rand()%(fin-debut);
-	//printf("Push %deme position\n\n",push);
+
 	if(push==0 || pioche == 40){
 		temp->suivant = P->tete;
 		P->tete = temp;
@@ -196,13 +191,25 @@ void pioche_n_push(Pile *P, int debut, int fin){ //pioche une carte au hasard da
 		courant->suivant = temp;
 	}		
 	
-	//free
+	
 }
 
-void Affichage(
+void Affichage_carte(int n_joueur, Joueur** joueurs){
+	Carte* parcours;
+	parcours = joueurs[n_joueur]->main->tete;
+	int lgEcr;
+	while(parcours!=NULL){
+		char ligne[LIGNE_MAX];
+		ligne[0] = Figure[parcours->figure];
+		ligne[1] = Enseigne[parcours->enseigne];  
+		ligne[2] = 0;
+		lgEcr = ecrireLigne(dataThreadEcr[n_joueur].spec.canal,ligne);
+		if (lgEcr == -1)
+		 	erreur_IO("ecrire ligne");
+		parcours = parcours -> suivant;
+	}
 	
-	ligne = 	
-	ecrireLigne(dataThreadEcr[i].spec.canal,ligne);
+}
 	
 void Transfert_carte(Joueur** joueurs, int donneur, int receveur, int choix_carte)
 {
@@ -210,11 +217,11 @@ void Transfert_carte(Joueur** joueurs, int donneur, int receveur, int choix_cart
 	
 	Carte* temp = malloc(sizeof(Carte));
 	if(choix_carte == 1)
-		temp = depiler(joueurs[donneur]);
+		temp = depiler(joueurs[donneur]->main);
 	else
 	{
-		Carte* courant;// = malloc(sizeof(Carte));
-		courant = joueur[donneur]->tete;
+		Carte* courant;
+		courant = joueurs[donneur]->main->tete;
 		for(int i=1; i<choix_carte; i++)
 			courant = courant->suivant;
 		temp = courant->suivant;
@@ -224,7 +231,7 @@ void Transfert_carte(Joueur** joueurs, int donneur, int receveur, int choix_cart
 	
 	//on donne la carte au receveur
 	
-	empiler(joueurs[receveur], temp);
+	empiler(joueurs[receveur]->main, temp);
 }
 
 

@@ -1,28 +1,25 @@
-<<<<<<< Updated upstream
 # PROJET : Fichier Makefile
 #
-=======
->>>>>>> Stashed changes
+
 include ../Makefile.inc
 
 EXE = serveur client
 
-<<<<<<< Updated upstream
-${EXE): ${PSE_LIB}
-
 all: ${EXE}
 
-clean:
-	rm -f *.o *~ ${EXE}
+serveur: serveur.o fonctions.o
+	gcc -o $@ $^ $(LDLIBS)
+	
+fonctions.o: fonctions.c
+	gcc -o $@ -c $< $(CFLAGS)
+	
+serveur.o: serveur.c fonctions.h
+	gcc -o $@ -c $< $(CFLAGS)
 
-=======
-all: ${EXE}
-
-${EXE): ${PSE_LIB}
 
 	
 
+
 	
-	
->>>>>>> Stashed changes
+
 
