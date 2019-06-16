@@ -16,25 +16,26 @@ DataThread dataThreadEcr[NB_WORKERS];
 int joueur_actuel;
 int fin_appui;
 /*semaphore de gestion des clients*/ 
-sem_t sem_mutex, sem_tour, sem_appui;
+sem_t sem_mutex, sem_appui;
 pthread_mutex_t verrouStat= PTHREAD_MUTEX_INITIALIZER;
 int tab_jeu[2] = {0,0};
 extern Joueur * joueurs[NB_WORKERS];
-pthread_barrier_t barriere_serveur;
+pthread_barrier_t barriere_tour;
 
 
 
 int main(int argc, char *argv[]) {
   short port;
-  int ecoute, canal_lec, canal_ecr, ret;
+  int ecoute, canal_lec, canal_ecr, ret, lgEcr;
   struct sockaddr_in adrEcoute, adrClient;
   unsigned int lgAdrClient;
   int numWorker;
   char ligne[LIGNE_MAX];
   
   sem_init(&sem_mutex, 0, NB_WORKERS);//initialisation de sémaphore
-  sem_init(&sem_tour, 0, 0);//sémaphores qui servent à débloquer tous les threads en même temps
+  //sem_init(&sem_tour, 0, 0);//sémaphores qui servent à débloquer tous les threads en même temps
   sem_init(&sem_appui, 0,0);
+  pthread_barrier_init(&barriere_tour, NULL, NB_WORKERS+1);
   
   if (argc != 2)
   
@@ -99,18 +100,24 @@ int main(int argc, char *argv[]) {
   char phrase[24] = {'Q','u','e','l','l','e',' ','c','a','r','t','e',' ','e','c','h','a','n','g','e','r',' ','?',0};
   for(int tour = 1; tour<=5 ;tour++){
   	for(int individu = 0;individu<=2;individu++){
+  		int canalEcr = dataThreadEcr[individu].spec.canal;
+  		joueur_actuel = individu;
   		
+  		pthread_barrier_wait(&barriere_tour);
   		Affichage_carte(individu, joueurs);
+  		
   		for(int i =0; i<=23; i++)
   			ligne[i] = phrase[i];
-  		
-  		ecrireLigne(dataThreadEcr[individu].spec.canal,ligne);
+			printf("demande %d\n",individu);
+  		lgEcr = ecrireLigne(canalEcr, ligne);
+			if (lgEcr == -1)
+		 		erreur_IO("ecrire ligne");
+		 		
   		tab_jeu[0] = 0;
   		tab_jeu[1] = 0;
-  		for(int i=0;i<3;i++)
-  			sem_post(&sem_tour);
   		while(!tab_jeu[0]) {};
-    		Transfert_carte(joueurs, individu, (individu+1)%NB_WORKERS, tab_jeu[1]);
+  		printf("%d:sorti!",tab_jeu[1]);
+    	Transfert_carte(joueurs, individu, (individu+1)%NB_WORKERS, tab_jeu[1]);
   	}
   }	
   		
@@ -132,7 +139,6 @@ void creerCohorteWorkers(void) {
   	}	
   for (i = 0; i < NB_WORKERS; i++) {
   	
-  	
   	numThread = i;
 		sem_init(&sem_event,0,0);//crée 1 sémaphore par worker de lecture
     ret = pthread_create(&dataThreadLec[i].spec.id, NULL, threadSessionClient, &numThread);
@@ -146,9 +152,9 @@ void creerCohorteWorkers(void) {
   		perror("mutex_lock");
   		exit (EXIT_FAILURE);
   	}
-  	
+  	/*
 		sem_init(&sem_event,0,0);//crée 1 sémaphore par worker d'écriture
-    ret = pthread_create(&dataThreadEcr[i].spec.id, NULL, threadSessionClient, &numThread);
+    ret = pthread_create(&dataThreadEcr[i].spec.id, NULL, Appui, &numThread);
     if (ret != 0)
       erreur_IO("pthread_create");
     dataThreadEcr[i].spec.libre = VRAI;
@@ -158,6 +164,7 @@ void creerCohorteWorkers(void) {
   		perror("mutex_lock");
   		exit (EXIT_FAILURE);
   	}
+  	*/
   }
 }
 
@@ -178,17 +185,16 @@ void *threadSessionClient(void *arg) {
   DataThread *dataThreadL;
   DataThread *dataThreadE;
   int canalLec, canalEcr, numJoueur;
-  int i;
   int *j;
 	
   j = (int *)arg;
-  i = *j;
+  numJoueur = *j;
   if ( pthread_mutex_unlock( &verrouStat) != 0) {
   	perror("mutex_unlock");
   	exit (EXIT_FAILURE);
   }
-  dataThreadL = &dataThreadLec[i];
-  dataThreadE = &dataThreadEcr[i];
+  dataThreadL = &dataThreadLec[numJoueur];
+  dataThreadE = &dataThreadEcr[numJoueur];
 
   while (VRAI) {
  
@@ -196,7 +202,7 @@ void *threadSessionClient(void *arg) {
     dataThreadL->spec.libre = FAUX;
     canalLec = dataThreadL->spec.canal;
     canalEcr = dataThreadE->spec.canal;
-    numJoueur = dataThreadL->spec.tid;
+    //printf("%d,%d,%d ",numJoueur,canalEcr,&(dataThreadE->spec));
     sessionClient(canalLec, canalEcr, numJoueur);
     dataThreadL->spec.canal = -1;
     dataThreadE->spec.canal = -1;
@@ -224,14 +230,14 @@ void sessionClient(int canalLec, int canalEcr, int numJoueur) {
 	ligne[6] = ' ';
 	ligne[7] = numJoueur+49;
 	ligne[8] = 0;
-  printf("écriture d'une ligne");
+  printf("écriture sur %d, canal %d\n",numJoueur, canalEcr);
   lgEcr = ecrireLigne(canalEcr, ligne);
 	if (lgEcr == -1)
 		 erreur_IO("ecrire ligne");
 
   while (!fin) {
 		do {
-				sem_wait(&sem_tour);
+				pthread_barrier_wait(&barriere_tour);
 				j = joueur_actuel;
 				ligne[0] = 'T';
 				ligne[1] = 'o';
@@ -243,27 +249,33 @@ void sessionClient(int canalLec, int canalEcr, int numJoueur) {
 				ligne[7] = ' ';
 				ligne[8] = j+49;
 				ligne[9] = 0;
-				ecrireLigne(canalEcr, ligne);
-			} while (j == numJoueur);
-	
-    lgLue = lireLigne(canalLec, ligne);
-    if (lgLue < 0)
-      erreur_IO("lire ligne");
-    else if (lgLue == 0) {
-      printf("arret client\n");
-      fin = VRAI;
-    }
+				printf("affiche tour %d\n",numJoueur);
+				lgEcr = ecrireLigne(canalEcr, ligne);
+				if (lgEcr == -1)
+		 			erreur_IO("ecrire ligne");
+			} while (j != numJoueur);
+			
+		//while(!tab_jeu[0]) {
+		  lgLue = lireLigne(canalLec, ligne);
+		  if (lgLue < 0)
+		    erreur_IO("lire ligne");
+		  else if (lgLue == 0) {
+		    printf("arret client\n");
+		    fin = VRAI;
+		  }
 
-    if (strcmp(ligne, "fin") == 0) {
-      printf("serveur: fin client\n");
-      fin = VRAI;
-    }
+		  if (strcmp(ligne, "fin") == 0) {
+		    printf("serveur: fin client\n");
+		    fin = VRAI;
+		  }
 
-    else {
-    	carte_jouee = atoi(ligne)-1;
-    	tab_jeu[1] = carte_jouee;
-    	tab_jeu[0] = 1; 
-    }
+		  else {
+		  	carte_jouee = atoi(ligne)-1;
+		  	printf("carte %d\n",carte_jouee);
+		  	tab_jeu[1] = carte_jouee;
+		  	tab_jeu[0] = 1; 
+		  }
+		//}
   } // fin while
 
   if (close(canalLec) == -1)

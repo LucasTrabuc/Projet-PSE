@@ -16,7 +16,7 @@ Joueur* joueurs[NB_WORKERS];
 
 const char Figure[] = {'A', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'J', 'Q', 'K'};
 const char Enseigne[] = {'K', 'C', 'P', 'T'};
-extern DataThread* dataThreadEcr;
+extern DataThread dataThreadEcr[NB_WORKERS];
 	
 void Init_jeu(void){	
 	srand(time(NULL));
@@ -89,8 +89,6 @@ void melange(Pile* pile, int nb_melange, int debut, int fin){
 	for(int i=0; i<nb_melange; i++){ 
 		pioche_n_push(pile, debut, fin);		
 	}
-	Carte* parcours = (Carte*) malloc(sizeof(Carte));
-	parcours = pile->tete;
 }
 
 
@@ -198,12 +196,15 @@ void Affichage_carte(int n_joueur, Joueur** joueurs){
 	Carte* parcours;
 	parcours = joueurs[n_joueur]->main->tete;
 	int lgEcr;
+	char ligne[LIGNE_MAX];
 	while(parcours!=NULL){
-		char ligne[LIGNE_MAX];
+		int canalEcr = dataThreadEcr[n_joueur].spec.canal;
 		ligne[0] = Figure[parcours->figure];
 		ligne[1] = Enseigne[parcours->enseigne];  
 		ligne[2] = 0;
-		lgEcr = ecrireLigne(dataThreadEcr[n_joueur].spec.canal,ligne);
+		
+		//printf("affichage carte %d sur %d, adresse %d\n", n_joueur, canalEcr, &(dataThreadEcr[n_joueur].spec));
+		lgEcr = ecrireLigne(canalEcr,ligne);
 		if (lgEcr == -1)
 		 	erreur_IO("ecrire ligne");
 		parcours = parcours -> suivant;
@@ -216,7 +217,7 @@ void Transfert_carte(Joueur** joueurs, int donneur, int receveur, int choix_cart
 	//On récupère la carte du donneur
 	
 	Carte* temp = malloc(sizeof(Carte));
-	if(choix_carte == 1)
+	if(choix_carte == 0)
 		temp = depiler(joueurs[donneur]->main);
 	else
 	{
