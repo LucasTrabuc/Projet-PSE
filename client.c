@@ -1,5 +1,4 @@
 #include "pse.h"
-#include "fonctions.h"
 
 #define CMD   "client"
 
@@ -85,23 +84,12 @@ int main(int argc, char *argv[]) {
 	
 	
 	}
-	
-	
-	
-	
-	
-	
-	
-	
-  
-  
 }
-
-
-
-
-
-
-
-
-
+	
+	
+	
+	
+	
+	
+	
+  
