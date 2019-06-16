@@ -45,19 +45,17 @@ int main(int argc, char *argv[]) {
   
   if (pid_fils!=0){
 	  while (!fin) {
-		printf("ligne> ");
-		if (fgets(ligne, LIGNE_MAX, stdin) == NULL)
-		  erreur("saisie fin de fichier\n");
+			if (fgets(ligne, LIGNE_MAX, stdin) == NULL)
+				erreur("saisie fin de fichier\n");
 
-		lgEcr = ecrireLigne(sock, ligne);
-		if (lgEcr == -1)
-		  erreur_IO("ecrire ligne");
-	  
-		printf("Done.\n");
-		printf("%s: %d bytes sent\n", CMD, lgEcr);
+			lgEcr = ecrireLigne(sock, ligne);
+			if (lgEcr == -1)
+				erreur_IO("ecrire ligne");
+			
+			printf("%s: demande envoyée\n", CMD);
 
-		if (strcmp(ligne, "fin\n") == 0)
-		  fin = VRAI;
+			if (strcmp(ligne, "fin\n") == 0)
+				fin = VRAI;
 	  }
 
 	  if (close(sock) == -1)
@@ -70,19 +68,14 @@ int main(int argc, char *argv[]) {
 	
 	else {
 		while (!fin) {
-			if (lireLigne(sock, ligne) > 0){
-			
+			if (lireLigne(sock, ligne) > 0)
 				printf("%s \n", ligne);
-			}
 		  }
 
 		  if (close(sock) == -1)
 			erreur_IO("close socket");
 
 		  exit(EXIT_SUCCESS);
-	
-	
-	
 	}
 }
 	
